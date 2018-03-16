@@ -37,7 +37,6 @@ entity top is
 end top;
 
 architecture rtl of top is
-
   constant RES_NUM : natural := 6;
 
   type t_param_array is array (0 to RES_NUM-1) of natural;
@@ -157,6 +156,13 @@ architecture rtl of top is
   signal dir_pixel_column    : std_logic_vector(10 downto 0);
   signal dir_pixel_row       : std_logic_vector(10 downto 0);
 
+	signal counter_next			: std_logic_vector(MEM_ADDR_WIDTH-1 downto 0);
+	signal counter			: std_logic_vector(MEM_ADDR_WIDTH-1 downto 0);
+	signal counter_px				: std_logic_vector(GRAPH_MEM_ADDR_WIDTH-1 downto 0);
+	signal counter_px_next		: std_logic_vector(GRAPH_MEM_ADDR_WIDTH-1 downto 0);
+
+
+
 begin
 
   -- calculate message lenght from font size
@@ -168,8 +174,8 @@ begin
   graphics_lenght <= conv_std_logic_vector(MEM_SIZE*8*8, GRAPH_MEM_ADDR_WIDTH);
   
   -- removed to inputs pin
-  direct_mode <= '1';
-  display_mode     <= "10";  -- 01 - text mode, 10 - graphics mode, 11 - text & graphics
+  direct_mode <= '0';
+  display_mode     <= "01";  -- 01 - text mode, 10 - graphics mode, 11 - text & graphics
   
   font_size        <= x"1";
   show_frame       <= '1';
@@ -250,16 +256,56 @@ begin
   --dir_red
   --dir_green
   --dir_blue
+  
+  dir_red <= x"ff" when dir_pixel_column >= 0 and dir_pixel_column <= 319 else x"00";
+  dir_green <= x"ff" when dir_pixel_column >= 160 and dir_pixel_column <= 479 else x"00";
+  dir_blue <= x"ff" when (dir_pixel_column >=0 and dir_pixel_column <= 159) or (dir_pixel_column >= 320 and dir_pixel_column <= 479) else x"00";
  
   -- koristeci signale realizovati logiku koja pise po TXT_MEM
   --char_address
   --char_value
   --char_we
   
+  
+  process(pix_clock_s) begin
+	if rising_edge(pix_clock_s) then
+		counter<= counter_next;
+		
+	end if;
+	end process;
+	
+	counter_next <= counter + '1' when counter < 4800 else "00" & x"000";
+
+	
+	char_address <= counter;
+	
+	char_we <= '1';
+	
+	char_value <=	"010000" when counter = "00" & x"000" else --P
+						"010100" when counter = "00" & x"001" else --R
+						"000101" when counter = "00" & x"002" else --E
+						"000100" when counter = "00" & x"003" else --D
+						"010100" when counter = "00" & x"004" else --R
+						"000001" when counter = "00" & x"006" else --A
+						"000111" when counter = "00" & x"007" else --G
+						"100000" when counter = "00" & x"008" else -- 
+						"010100" when counter = "00" & x"009" else --R
+						"000001" when counter = "00" & x"00A" else --A
+						"000100" when counter = "00" & x"00B" else --D
+						"001111" when counter = "00" & x"00C" else --O
+						"001110" when counter = "00" & x"00D" else --N
+						"001010" when counter = "00" & x"00D" else --J
+						"001001" when counter = "00" & x"00D" else --I
+						"000011" when counter = "00" & x"00D" else --C
+						"100000" -- razmak
+						;
   -- koristeci signale realizovati logiku koja pise po GRAPH_MEM
   --pixel_address
   --pixel_value
   --pixel_we
+
+ 
   
+
   
 end rtl;
